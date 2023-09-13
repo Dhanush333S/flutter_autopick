@@ -32,6 +32,7 @@ dependencies:
   flutter:
     sdk: flutter
   image_cropper: 3.0.1
+  http: 0.13.4
   image_picker: ^0.8.8
   permission_handler: ^10.3.0
 

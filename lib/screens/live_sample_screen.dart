@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
+import 'package:auto_pick/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 class LiveSampleScreen extends StatefulWidget {
   // final Uint8List image;
@@ -140,6 +145,29 @@ class _LiveSampleScreenState extends State<LiveSampleScreen> {
         });
   }
 
+  void sendImgSever(File? image, BuildContext context) async {
+    try {
+      if (image != null) {
+        final request =
+            http.MultipartRequest("POST", Uri.parse("http://10.0.2.2:5000/upload"));
+        final headers = {"Content-type": "multipart/form-data"};
+        request.files.add(http.MultipartFile(
+            'image', image.readAsBytes().asStream(), image.lengthSync(),
+            filename: image.path.split("/").last));
+        request.headers.addAll(headers);
+        final response=await request.send();
+        http.Response res=await http.Response.fromStream(response);
+        final resJson=jsonDecode(res.body);
+        print(resJson);
+      } else {
+        showSnackBar("Image not selected", context);
+      }
+    } catch (e) {
+        print(e.toString());
+      showSnackBar(e.toString(), context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,19 +234,22 @@ class _LiveSampleScreenState extends State<LiveSampleScreen> {
                 : ClipRRect(
                     child: Image.file(
                     imageFile!,
-                    height: MediaQuery.of(context).size.height*0.4,
-                    width: MediaQuery.of(context).size.width*0.8,
+                    height: MediaQuery.of(context).size.height * 0.4,
+                    width: MediaQuery.of(context).size.width * 0.8,
                     fit: BoxFit.fill,
                   )),
             const SizedBox(
               height: 20.0,
             ),
-            ElevatedButton(
-              onPressed: () async {
-                showImagePicker(context);
-              },
-              child: Text('Take Image'),
-            ),
+            imageFile == null
+                ? ElevatedButton(
+                    onPressed: () async {
+                      showImagePicker(context);
+                    },
+                    child: const Text('Take Image'),
+                  )
+                : ElevatedButton(
+                    onPressed:()=> sendImgSever(imageFile,context), child: const Text("Process")),
           ],
         ),
       ),
